@@ -12,16 +12,16 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# 2. Koneksi Database (Mengambil dari secrets)
+# 2. Koneksi Database (Mengambil dari Secrets Streamlit Cloud)
 @st.cache_resource
 def get_engine():
     try:
+        # Mengambil URL dari secrets.toml atau Streamlit Cloud Secrets
         db_url = st.secrets["DATABASE_URL"]
-        # connect_args memastikan koneksi SSL aktif untuk Neon
         engine = create_engine(db_url, connect_args={"sslmode": "require"})
         return engine
     except Exception as e:
-        st.error(f"❌ Gagal koneksi database: {e}")
+        st.error(f"❌ Gagal koneksi database. Periksa Secrets: {e}")
         return None
 
 # 3. Load Data
@@ -31,8 +31,8 @@ def load_data():
     if engine is None:
         return None
     
-    # CATATAN: Jika error menyebut kolom 'jenis_ikan' tidak ada, 
-    # ganti 'dj.jenis_ikan' menjadi 'dj.nama' atau 'dj.nama_ikan' sesuai struktur tabelmu.
+    # PENTING: Jika error "kolom tidak ditemukan", ganti 'dj.jenis_ikan' 
+    # dengan nama kolom yang sebenarnya di tabel dim_jenis_ikan (misal: 'nama' atau 'nama_ikan')
     query = """
         SELECT 
             dk.kab_kota AS kabupaten,
@@ -63,7 +63,7 @@ def load_data():
         return df
     except Exception as e:
         st.error(f"❌ Query gagal: {e}")
-        st.info("💡 Tips: Jika error menyebut kolom tidak ditemukan, buka DBeaver/Neon dan cek nama kolom yang benar di tabel `dim_jenis_ikan` (mungkin 'nama' atau 'nama_ikan'), lalu ubah di query atas.")
+        st.info("💡 Tips: Buka DBeaver/Neon, jalankan `SELECT * FROM dim_jenis_ikan LIMIT 1;` untuk melihat nama kolom ikan yang benar, lalu update query di atas.")
         return None
 
 df_raw = load_data()
