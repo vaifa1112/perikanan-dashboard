@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Dashboard Potensi Perikanan Tangkap Jawa Barat 2022–2024</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{--navy:#1e3a8a;--deep:#0b1f4a;--teal:#0d9488;--amber:#d97706;--bg:#eef3f8;--card:#fff;--ink:#0f172a;--mute:#64748b;--line:#dbe4ee;--soft:#f6f9fc;
+ box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#08142e;--card:#0f1f42;--ink:#e6edf8;--mute:#93a4c0;--line:#1f3566;--soft:#0b1936}}
+:root[data-theme="dark"]{--bg:#08142e;--card:#0f1f42;--ink:#e6edf8;--mute:#93a4c0;--line:#1f3566;--soft:#0b1936}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font-family:'Figtree',system-ui,sans-serif;font-size:14px}
+h1,h2,h3,.disp{font-family:'Bricolage Grotesque','Figtree',system-ui,sans-serif}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px}
+.hero{background:linear-gradient(135deg,#0b1f4a,#1e3a8a 70%,#0f4c75);color:#fff;position:relative;overflow:hidden}
+.hero svg{position:absolute;left:0;bottom:-1px;width:100%;height:46px}
+aside{background:var(--deep);color:#dbe7fb}
+.lbl{font-weight:600;font-size:12px;color:#9fb6de;margin-bottom:6px;display:block}
+.inp{width:100%;background:#12306b;border:1px solid #234585;color:#fff;border-radius:8px;padding:7px 10px;font-size:13px}
+.inp::placeholder{color:#7f98c8}
+.inp:focus,button:focus-visible,.chip:focus-visible,summary:focus-visible{outline:2px solid #5eead4;outline-offset:1px}
+.chip{border:1px solid #2c4f95;border-radius:999px;padding:5px 12px;font-size:12px;cursor:pointer;background:transparent;color:#cfe0fb}
+.chip[aria-pressed=true]{background:var(--teal);border-color:var(--teal);color:#fff}
+.list{max-height:150px;overflow:auto;background:#0e2a5e;border-radius:8px;border:1px solid #234585}
+.list label,.list button{display:flex;gap:8px;align-items:center;width:100%;text-align:left;padding:5px 9px;font-size:12.5px;cursor:pointer;color:#dbe7fb;background:none;border:0}
+.list label:hover,.list button:hover{background:#17397c}
+.btn{border-radius:8px;padding:8px 12px;font-weight:600;font-size:13px;cursor:pointer;border:1px solid transparent}
+.kpi b{font-family:'Bricolage Grotesque',sans-serif;font-size:26px;line-height:1.1;letter-spacing:-.01em;display:block}
+.kpi span{color:var(--mute);font-size:12.5px}
+.seg button{padding:4px 10px;font-size:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}
+.seg button:first-child{border-radius:8px 0 0 8px}.seg button:last-child{border-radius:0 8px 8px 0;border-left:0}
+.seg button[aria-pressed=true]{background:var(--navy);color:#fff;border-color:var(--navy)}
+.cv{position:relative;height:300px}
+table{border-collapse:collapse;width:100%}
+th{position:sticky;top:0;background:var(--soft);text-align:left;font-weight:600;font-size:12.5px;padding:99px 10px;white-space:nowrap;border-bottom:1px solid var(--line)}
+th.s{cursor:pointer;user-select:none}
+td{padding:8px 10px;border-bottom:1px solid var(--line);font-size:13px}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+tbody tr:hover{background:var(--soft)}
+.tag{font-size:11px;border-radius:6px;padding:1px 6px;font-weight:600}
+.menu{position:absolute;right:0;top:100%;margin-top:6px;background:var(--card);border:1px solid var(--line);border-radius:10px;min-width:170px;z-index:30;box-shadow:0 8px 24px rgba(8,20,46,.18);overflow:hidden}
+.menu button{display:block;width:100%;text-align:left;padding:9px 12px;background:none;border:0;color:var(--ink);cursor:pointer;font-size:13px}
+.menu button:hover{background:var(--soft)}
+@media(max-width:1023px){#side{position:fixed;inset:0 auto 0 0;width:min(320px,88vw);z-index:40;transform:translateX(-102%);transition:transform .2s;padding-top:env(safe-area-inset-top,0px);overflow:auto}
+ #side.open{transform:none}#scrim{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:35}#scrim.on{display:block}}
+@media print{aside,#menuBtn,.noprint,#scrim{display:none!important}.card{break-inside:avoid}body{background:#fff}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div id="scrim" onclick="toggleSide(false)"></div>
+<div class="lg:flex min-h-screen">
+<aside id="side" class="lg:w-[300px] lg:shrink-0 lg:sticky lg:top-0 lg:h-screen lg:overflow-auto p-4 space-y-5 noprint">
+  <div class="flex items-center justify-between">
+    <div class="disp font-bold text-lg text-white">Filter data</div>
+    <button class="lg:hidden text-white text-xl px-2" onclick="toggleSide(false)" aria-label="Tutup filter">✕</button>
+  </div>
+  <div>
+    <span class="lbl">Tahun</span>
+    <div class="flex flex-wrap gap-2" id="yearChips"></div>
+  </div>
+  <div>
+    <span class="lbl">Jenis usaha</span>
+    <div class="flex flex-wrap gap-2" id="usahaChips"></div>
+  </div>
+  <div>
+    <span class="lbl">Kabupaten / Kota <em id="regCount" class="not-italic text-[#5eead4]"></em></span>
+    <input id="regQ" class="inp mb-2" placeholder="Cari wilayah…" aria-label="Cari wilayah">
+    <div class="flex gap-3 text-xs mb-1"><button class="underline" id="regAll">Pilih semua</button><button class="underline" id="regNone">Kosongkan</button></div>
+    <div class="list" id="regList"></div>
+  </div>
+  <div>
+    <span class="lbl">Komoditas (kelompok atau jenis ikan)</span>
+    <div id="komSel" class="mb-2 hidden"></div>
+    <input id="komQ" class="inp mb-2" placeholder="Ketik nama ikan, mis. tongkol…" aria-label="Cari komoditas" autocomplete="off">
+    <div class="list" id="komList"></div>
+  </div>
+  <div class="flex gap-2 pt-1">
+    <button id="reset" class="btn flex-1" style="background:#fff;color:var(--deep)">Reset filter</button>
+    <div class="relative flex-1">
+      <button id="expBtn" class="btn w-full" style="background:var(--teal);color:#fff" aria-haspopup="true">Ekspor data ▾</button>
+      <div id="expMenu" class="menu hidden" style="right:auto;left:0;bottom:100%;top:auto;margin:0 0 6px">
+        <button id="expCsv">Unduh CSV (data terfilter)</button>
+        <button id="expPrint">Cetak / simpan PDF</button>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<main class="flex-1 min-w-0">
+  <header class="hero px-4 sm:px-8 pt-5 pb-14">
+    <button id="menuBtn" class="lg:hidden btn mb-3" style="background:rgba(255,255,255,.14);color:#fff" onclick="toggleSide(true)">☰ Filter</button>
+    <div class="max-w-4xl">
+      <div class="text-[#99f6e4] text-sm font-semibold mb-1">Perikanan tangkap · Provinsi Jawa Barat · 2022–2024</div>
+      <h1 class="text-2xl sm:text-4xl font-extrabold leading-tight">Peta Potensi Komoditas Unggulan Perikanan Tangkap</h1>
+      <p class="mt-2 text-[#c7d7f5] max-w-2xl">Dashboard interaktif yang terhubung langsung ke Database PostgreSQL (FastAPI Backend).</p>
+    </div>
+    <svg viewBox="0 0 1200 46" preserveAspectRatio="none" aria-hidden="true"><path d="M0 24C150 4 300 44 450 26S750 2 900 24s210 18 300 0V46H0Z" fill="var(--bg)"/><path d="M0 34C200 14 350 46 600 32s400-14 600 2V46H0Z" fill="var(--bg)" opacity=".6"/></svg>
+  </header>
+
+  <div class="px-4 sm:px-8 pb-10 -mt-6 relative space-y-4">
+    <section class="grid grid-cols-2 xl:grid-cols-4 gap-3" id="kpis" aria-label="Indikator utama"></section>
+    <div id="insight" class="card px-4 py-3 text-[13.5px]" style="border-left:4px solid var(--amber)"></div>
+
+    <section class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+      <div class="card p-4"><h2 class="font-bold text-base">Tren tahunan: volume vs nilai ekonomi</h2><p class="text-xs" style="color:var(--mute)">Batang = volume (ribu ton), garis = nilai (Rp triliun)</p><div class="cv mt-2"><canvas id="cTrend"></canvas></div></div>
+      <div class="card p-4"><div class="flex justify-between items-start gap-2"><div><h2 class="font-bold text-base">Kab/Kota penghasil volume tertinggi</h2><p class="text-xs" style="color:var(--mute)">Klik batang untuk memfilter wilayah</p></div><div class="seg topn"></div></div><div class="cv mt-2"><canvas id="cReg"></canvas></div></div>
+      <div class="card p-4"><div class="flex justify-between items-start gap-2"><div><h2 class="font-bold text-base">Jenis ikan dengan nilai tertinggi</h2><p class="text-xs" style="color:var(--mute)">Klik batang untuk memfilter komoditas</p></div><div class="seg topn"></div></div><div class="cv mt-2"><canvas id="cJenis"></canvas></div></div>
+      <div class="card p-4"><h2 class="font-bold text-base">Proporsi volume menurut jenis usaha</h2><p class="text-xs" style="color:var(--mute)">Laut vs perairan darat</p><div class="cv mt-2"><canvas id="cUsaha"></canvas></div></div>
+    </section>
+    <section class="card p-4">
+      <div class="flex flex-wrap justify-between items-start gap-2"><div><h2 class="font-bold text-base">Harga rata-rata tertimbang antar komoditas utama</h2><p class="text-xs" style="color:var(--mute)">Rp/kg, 10 jenis ikan dengan volume terbesar. Sebaran: sumbu x = volume, sumbu y = harga.</p></div><div class="seg" id="priceMode"><button data-m="bar" aria-pressed="true">Batang</button><button data-m="scatter" aria-pressed="false">Sebaran</button></div></div>
+      <div class="cv mt-2" style="height:340px"><canvas id="cPrice"></canvas></div>
+    </section>
+
+    <section class="card p-4">
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
+        <div><h2 class="font-bold text-base">Tabel data rinci</h2><p class="text-xs" style="color:var(--mute)" id="tblInfo"></p></div>
+        <div class="flex gap-2 noprint"><input id="tq" class="inp" style="background:var(--card);color:var(--ink);border-color:var(--line);width:220px" placeholder="Cari wilayah / ikan…" aria-label="Cari di tabel">
+        <select id="ps" class="inp" style="width:auto;background:var(--card);color:var(--ink);border-color:var(--line)" aria-label="Baris per halaman"><option>10</option><option>25</option><option>50</option></select></div>
+      </div>
+      <div class="overflow-x-auto rounded-lg" style="border:1px solid var(--line)"><table><thead><tr id="thead"></tr></thead><tbody id="tbody"></tbody></table></div>
+      <div class="flex flex-wrap items-center justify-between gap-2 mt-3 noprint"><span id="pgInfo" class="text-xs" style="color:var(--mute)"></span>
+        <div class="flex gap-1" id="pager"></div></div>
+    </section>
+    <footer class="text-xs pt-2" style="color:var(--mute)">Sumber: Database PostgreSQL (Star Schema) via FastAPI. Harga tertimbang = nilai ÷ volume × 1.000.</footer>
+  </div>
+</main>
+</div>
+
+<script>
+// Global State & Variable Inisialisasi Dinamis dari API
+let D = { k: [], g: [], j: [], u: [], r: [] };
+let KAB = [], GRP = [], JNS = [], USH = [];
+let ROWS = [];
+const YEARS = [2022, 2023, 2024];
+
+const S = { years: new Set(YEARS), usaha: 'ALL', regs: new Set(), kom: null, topN: 10, sort: { k: 'v', d: -1 }, page: 1, ps: 10, tq: '', priceMode: 'bar' };
+const $ = id => document.getElementById(id);
+const f0 = n => Math.round(n).toLocaleString('id-ID');
+const f2 = n => n.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const title = s => String(s).toLowerCase().replace(/(^|[\s\/-])([a-z])/g, (m, a, b) => a + b.toUpperCase());
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const NAVY = '#1e3a8a', TEAL = '#0d9488', AMB = '#d97706';
+
+function toggleSide(o) { $('side').classList.toggle('open', o); $('scrim').classList.toggle('on', o) }
+
+/* ---------- Memanggil API FastAPI ---------- */
+async function loadDataFromFastAPI() {
+  try {
+    const response = await fetch("http://127.0.0.1:8000/api/perikanan");
+    if (!response.ok) throw new Error("Gagal mengambil data dari API FastAPI server.");
+    
+    D = await response.json();
+
+    KAB = D.k;
+    GRP = D.g;
+    JNS = D.j;
+    USH = D.u;
+
+    ROWS = D.r.map(r => ({
+      y: r[0], k: r[1], g: r[2], j: r[3], u: r[4], v: r[5], n: r[6], h: r[7]
+    }));
+
+    S.regs = new Set(KAB);
+
+    buildControls();
+    buildCharts();
+    render();
+
+    console.log("Berhasil memuat data dari PostgreSQL via FastAPI!");
+  } catch (error) {
+    console.error("Error:", error);
+    $('insight').innerHTML = `<b style="color:red">Gagal Koneksi Database:</b> ${error.message}. Pastikan server FastAPI running (<code>python -m uvicorn main:app --reload</code>).`;
+  }
+}
+
+/* ---------- filter ---------- */
+function filtered() {
+  return ROWS.filter(r => S.years.has(r.y) && (S.usaha === 'ALL' || r.u === S.usaha) && S.regs.has(r.k) &&
+    (!S.kom || (S.kom.t === 'g' ? r.g === S.kom.v : r.j === S.kom.v)));
+}
+function group(rows, key) {
+  const m = new Map();
+  for (const r of rows) { const o = m.get(r[key]) || { key: r[key], v: 0, n: 0 }; o.v += r.v; o.n += r.n; m.set(r[key], o) }
+  return [...m.values()].map(o => ({ ...o, h: o.v ? o.n / o.v * 1000 : 0 }));
+}
+
+/* ---------- sidebar controls ---------- */
+function buildControls() {
+  $('yearChips').innerHTML = ['ALL', ...YEARS].map(y => `<button class="chip" data-y="${y}" aria-pressed="false">${y === 'ALL' ? 'Semua tahun' : y}</button>`).join('');
+  $('yearChips').onclick = e => {
+    const b = e.target.closest('[data-y]'); if (!b) return; const y = b.dataset.y;
+    if (y === 'ALL') S.years = new Set(YEARS);
+    else { const n = +y; if (S.years.size === 3) S.years = new Set([n]); else { S.years.has(n) ? S.years.delete(n) : S.years.add(n); if (!S.years.size) S.years = new Set(YEARS) } }
+    S.page = 1; render()
+  };
+  const us = [['ALL', 'Semua'], ['LAUT', 'Laut'], ['PERAIRAN DARAT', 'Perairan darat']];
+  $('usahaChips').innerHTML = us.map(u => `<button class="chip" data-u="${u[0]}" aria-pressed="false">${u[1]}</button>`).join('');
+  $('usahaChips').onclick = e => { const b = e.target.closest('[data-u]'); if (!b) return; S.usaha = b.dataset.u; S.page = 1; render() };
+  renderRegList();
+  $('regQ').oninput = renderRegList;
+  $('regAll').onclick = () => { S.regs = new Set(KAB); S.page = 1; render() };
+  $('regNone').onclick = () => { S.regs = new Set(); S.page = 1; render() };
+  $('regList').onchange = e => { const c = e.target; c.checked ? S.regs.add(c.value) : S.regs.delete(c.value); S.page = 1; render(true) };
+  $('komQ').oninput = renderKomList; renderKomList();
+  $('komList').onclick = e => { const b = e.target.closest('[data-t]'); if (!b) return; S.kom = { t: b.dataset.t, v: b.dataset.v }; $('komQ').value = ''; S.page = 1; render() };
+  $('komSel').onclick = e => { if (e.target.closest('button')) { S.kom = null; S.page = 1; render() } };
+  $('reset').onclick = resetAll;
+  $('expBtn').onclick = e => { e.stopPropagation(); $('expMenu').classList.toggle('hidden') };
+  document.addEventListener('click', () => $('expMenu').classList.add('hidden'));
+  $('expCsv').onclick = exportCsv;
+  $('expPrint').onclick = () => window.print();
+  document.querySelectorAll('.topn').forEach(g => {
+    g.innerHTML = '<button data-n="5" aria-pressed="false">Top 5</button><button data-n="10" aria-pressed="true">Top 10</button>';
+    g.onclick = e => { const b = e.target.closest('[data-n]'); if (!b) return; S.topN = +b.dataset.n; render() }
+  });
+  $('priceMode').onclick = e => { const b = e.target.closest('[data-m]'); if (!b) return; S.priceMode = b.dataset.m; buildPrice(); render() };
+  $('tq').oninput = e => { S.tq = e.target.value.trim().toLowerCase(); S.page = 1; renderTable() };
+  $('ps').onchange = e => { S.ps = +e.target.value; S.page = 1; renderTable() };
+}
+function resetAll() {
+  S.years = new Set(YEARS); S.usaha = 'ALL'; S.regs = new Set(KAB); S.kom = null; S.topN = 10; S.tq = ''; S.page = 1; S.sort = { k: 'v', d: -1 };
+  $('tq').value = ''; $('regQ').value = ''; $('komQ').value = ''; render()
+}
+function renderRegList() {
+  const q = $('regQ').value.toLowerCase();
+  $('regList').innerHTML = KAB.filter(k => k.toLowerCase().includes(q)).map(k => `<label><input type="checkbox" value="${k}" ${S.regs.has(k) ? 'checked' : ''}> ${title(k)}</label>`).join('') || '<div class="p-2 text-xs">Wilayah tidak ditemukan.</div>';
+}
+function renderKomList() {
+  const q = $('komQ').value.toLowerCase();
+  const opts = [...GRP.map(v => ({ t: 'g', v })), ...JNS.map(v => ({ t: 'j', v }))].filter(o => o.v.toLowerCase().includes(q)).slice(0, 60);
+  $('komList').innerHTML = opts.map(o => `<button data-t="${o.t}" data-v="${o.v}"><span class="tag" style="background:${o.t === 'g' ? '#0d9488' : '#d97706'};color:#fff">${o.t === 'g' ? 'Kelompok' : 'Jenis'}</span>${title(o.v)}</button>`).join('') || '<div class="p-2 text-xs">Komoditas tidak ditemukan.</div>';
+}
+function syncControls(skipReg) {
+  document.querySelectorAll('[data-y]').forEach(b => b.setAttribute('aria-pressed', b.dataset.y === 'ALL' ? S.years.size === 3 : (S.years.size < 3 && S.years.has(+b.dataset.y))));
+  document.querySelectorAll('[data-u]').forEach(b => b.setAttribute('aria-pressed', b.dataset.u === S.usaha));
+  document.querySelectorAll('.topn [data-n]').forEach(b => b.setAttribute('aria-pressed', +b.dataset.n === S.topN));
+  document.querySelectorAll('#priceMode [data-m]').forEach(b => b.setAttribute('aria-pressed', b.dataset.m === S.priceMode));
+  $('regCount').textContent = S.regs.size === KAB.length ? '(semua)' : `(${S.regs.size} dipilih)`;
+  if (!skipReg) renderRegList();
+  const ks = $('komSel'); ks.classList.toggle('hidden', !S.kom);
+  if (S.kom) ks.innerHTML = `<span class="chip" style="background:var(--teal);border-color:var(--teal);color:#fff;display:inline-flex;gap:8px;align-items:center">${S.kom.t === 'g' ? 'Kelompok' : 'Jenis'}: ${title(S.kom.v)} <button aria-label="Hapus filter komoditas" style="background:none;border:0;color:#fff;cursor:pointer">✕</button></span>`;
+}
+
+/* ---------- KPI & insight ---------- */
+function renderKpi(rows) {
+  const v = rows.reduce((a, r) => a + r.v, 0), n = rows.reduce((a, r) => a + r.n, 0);
+  const h = v ? n / v * 1000 : 0;
+  const nk = new Set(rows.map(r => r.k)).size, nj = new Set(rows.map(r => r.j)).size, ng = new Set(rows.map(r => r.g)).size;
+  const items = [
+    ['Total volume produksi', f2(v) + ' ton', 'Jumlah produksi tangkap terpilih', NAVY],
+    ['Total nilai ekonomi', 'Rp ' + f2(n / 1e6) + ' triliun', 'Rp ' + f0(n) + ' juta', TEAL],
+    ['Harga rata-rata tertimbang', 'Rp ' + f0(h) + '/kg', 'Nilai ÷ volume × 1.000', AMB],
+    ['Cakupan data', nk + ' kab/kota', nj + ' jenis ikan dalam ' + ng + ' kelompok', NAVY]];
+  $('kpis').innerHTML = items.map(i => `<div class="card kpi p-4" style="border-top:4px solid ${i[3]}"><span>${i[0]}</span><b class="mt-1 break-words" style="font-size:clamp(18px,2.2vw,26px)">${i[1]}</b><span>${i[2]}</span></div>`).join('');
+  if (!rows.length) { $('insight').textContent = 'Tidak ada data untuk kombinasi filter ini. Ubah atau reset filter.'; return }
+  const tr = group(rows, 'k').sort((a, b) => b.v - a.v)[0], tj = group(rows, 'j').sort((a, b) => b.n - a.n)[0];
+  $('insight').innerHTML = `<b>Ringkasan:</b> ${title(tr.key)} menghasilkan volume terbesar (${f0(tr.v)} ton, ${(tr.v / v * 100).toFixed(1)}% dari total). Komoditas bernilai tertinggi adalah ${title(tj.key)} dengan Rp ${f2(tj.n / 1e6)} triliun pada harga rata-rata Rp ${f0(tj.h)}/kg.`;
+}
+
+/* ---------- charts ---------- */
+const CH = {};
+function baseOpts(extra) { return Object.assign({ responsive: true, maintainAspectRatio: false, animation: { duration: 350 }, plugins: { legend: { display: false } } }, extra || {}) }
+function applyTheme() { Chart.defaults.color = css('--mute'); Chart.defaults.borderColor = css('--line'); Chart.defaults.font.family = "'Figtree',system-ui,sans-serif" }
+function hbar(id, color, cb, fmt) {
+  if(CH[id]) CH[id].destroy();
+  CH[id] = new Chart($(id), {
+    type: 'bar', data: { labels: [], datasets: [{ data: [], backgroundColor: color, borderRadius: 4 }] },
+    options: baseOpts({
+      indexAxis: 'y', onClick: cb, onHover: (e, a) => { e.native.target.style.cursor = a.length ? 'pointer' : 'default' },
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => fmt(c.parsed.x) } } },
+      scales: { x: { grid: { color: css('--line') }, ticks: { callback: v => v.toLocaleString('id-ID') } }, y: { grid: { display: false } } }
+    })
+  });
+}
+function buildCharts() {
+  applyTheme();
+  if(CH.cTrend) CH.cTrend.destroy();
+  CH.cTrend = new Chart($('cTrend'), {
+    data: {
+      labels: [], datasets: [
+        { type: 'bar', label: 'Volume (ribu ton)', data: [], backgroundColor: NAVY, borderRadius: 6, yAxisID: 'y' },
+        { type: 'line', label: 'Nilai (Rp triliun)', data: [], borderColor: AMB, backgroundColor: AMB, tension: .3, pointRadius: 5, borderWidth: 3, yAxisID: 'y1' }]
+    },
+    options: baseOpts({ plugins: { legend: { display: true, position: 'bottom' } }, scales: { y: { title: { display: true, text: 'Ribu ton' }, beginAtZero: true }, y1: { position: 'right', grid: { display: false }, title: { display: true, text: 'Rp triliun' }, beginAtZero: true } } })
+  });
+  hbar('cReg', NAVY, (e, a) => { if (!a.length) return; S.regs = new Set([CH.cReg._keys[a[0].index]]); S.page = 1; render() }, v => f2(v) + ' ton');
+  hbar('cJenis', TEAL, (e, a) => { if (!a.length) return; S.kom = { t: 'j', v: CH.cJenis._keys[a[0].index] }; S.page = 1; render() }, v => 'Rp ' + f2(v) + ' triliun');
+  
+  if(CH.cUsaha) CH.cUsaha.destroy();
+  CH.cUsaha = new Chart($('cUsaha'), {
+    type: 'doughnut', data: { labels: [], datasets: [{ data: [], backgroundColor: [NAVY, TEAL, AMB], borderWidth: 2, borderColor: css('--card') }] },
+    options: baseOpts({ cutout: '62%', plugins: { legend: { display: true, position: 'bottom' }, tooltip: { callbacks: { label: c => { const t = c.dataset.data.reduce((a, b) => a + b, 0); return `${c.label}: ${f2(c.parsed)} ton (${(c.parsed / t * 100).toFixed(1)}%)` } } } } })
+  });
+  buildPrice();
+}
+function buildPrice() {
+  if (CH.cPrice) CH.cPrice.destroy();
+  const sc = S.priceMode === 'scatter';
+  CH.cPrice = new Chart($('cPrice'), sc ? {
+    type: 'scatter', data: { datasets: [{ data: [], backgroundColor: AMB, pointRadius: 7, pointHoverRadius: 9 }] },
+    options: baseOpts({
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => `${c.raw.l}: ${f0(c.raw.x)} ton, Rp ${f0(c.raw.y)}/kg` } } },
+      scales: { x: { type: 'logarithmic', title: { display: true, text: 'Volume (ton, skala log)' } }, y: { title: { display: true, text: 'Rp/kg' }, beginAtZero: true } }
+    })
+  }
+    : {
+      type: 'bar', data: { labels: [], datasets: [{ data: [], backgroundColor: AMB, borderRadius: 4 }] },
+      options: baseOpts({ plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => 'Rp ' + f0(c.parsed.y) + '/kg' } } }, scales: { y: { title: { display: true, text: 'Rp/kg' }, beginAtZero: true }, x: { grid: { display: false }, ticks: { maxRotation: 40, minRotation: 0 } } } })
+    });
+}
+function renderCharts(rows) {
+  const yrs = [...S.years].sort(), by = group(rows, 'y');
+  const bm = new Map(by.map(o => [o.key, o]));
+  const t = CH.cTrend; t.data.labels = yrs.map(String);
+  t.data.datasets[0].data = yrs.map(y => (bm.get(y)?.v || 0) / 1000);
+  t.data.datasets[1].data = yrs.map(y => (bm.get(y)?.n || 0) / 1e6); t.update();
+  const gr = group(rows, 'k').sort((a, b) => b.v - a.v).slice(0, S.topN);
+  CH.cReg._keys = gr.map(o => o.key); CH.cReg.data.labels = gr.map(o => title(o.key)); CH.cReg.data.datasets[0].data = gr.map(o => o.v); CH.cReg.update();
+  const gj = group(rows, 'j').sort((a, b) => b.n - a.n).slice(0, S.topN);
+  CH.cJenis._keys = gj.map(o => o.key); CH.cJenis.data.labels = gj.map(o => title(o.key)); CH.cJenis.data.datasets[0].data = gj.map(o => o.n / 1e6); CH.cJenis.update();
+  const gu = group(rows, 'u').sort((a, b) => b.v - a.v);
+  CH.cUsaha.data.labels = gu.map(o => title(o.key)); CH.cUsaha.data.datasets[0].data = gu.map(o => o.v); CH.cUsaha.update();
+  const gp = group(rows, 'j').sort((a, b) => b.v - a.v).slice(0, 10);
+  if (S.priceMode === 'scatter') CH.cPrice.data.datasets[0].data = gp.map(o => ({ x: o.v, y: o.h, l: title(o.key) }));
+  else { CH.cPrice.data.labels = gp.map(o => title(o.key)); CH.cPrice.data.datasets[0].data = gp.map(o => o.h) }
+  CH.cPrice.update();
+}
+
+/* ---------- tabel ---------- */
+const COLS = [['y', 'Tahun'], ['k', 'Kab/Kota'], ['g', 'Kelompok'], ['j', 'Jenis ikan'], ['u', 'Usaha'], ['v', 'Volume (ton)', 1], ['n', 'Nilai (Rp juta)', 1], ['h', 'Harga (Rp/kg)', 1]];
+function tableRows() {
+  let r = filtered();
+  if (S.tq) r = r.filter(x => (x.k + ' ' + x.g + ' ' + x.j + ' ' + x.u).toLowerCase().includes(S.tq));
+  const { k, d } = S.sort;
+  return r.sort((a, b) => (typeof a[k] === 'string' ? a[k].localeCompare(b[k]) : a[k] - b[k]) * d);
+}
+function renderTable() {
+  const r = tableRows(), pages = Math.max(1, Math.ceil(r.length / S.ps));
+  S.page = Math.min(S.page, pages);
+  $('thead').innerHTML = COLS.map(c => `<th class="s ${c[2] ? 'num' : ''}" data-k="${c[0]}" aria-sort="${S.sort.k === c[0] ? (S.sort.d > 0 ? 'ascending' : 'descending') : 'none'}" tabindex="0">${c[1]} ${S.sort.k === c[0] ? (S.sort.d > 0 ? '▲' : '▼') : '<span style="opacity:.3">↕</span>'}</th>`).join('');
+  const s = (S.page - 1) * S.ps, pg = r.slice(s, s + S.ps);
+  $('tbody').innerHTML = pg.map(x => `<tr><td>${x.y}</td><td>${title(x.k)}</td><td>${title(x.g)}</td><td>${title(x.j)}</td><td><span class="tag" style="background:${x.u === 'LAUT' ? '#dbeafe' : '#ccfbf1'};color:${x.u === 'LAUT' ? '#1e3a8a' : '#0f766e'}">${x.u === 'LAUT' ? 'Laut' : 'Perairan darat'}</span></td><td class="num">${f2(x.v)}</td><td class="num">${f0(x.n)}</td><td class="num">${f0(x.h)}</td></tr>`).join('') || '<tr><td colspan="8" class="p-6 text-center">Tidak ada baris yang cocok. Ubah kata kunci atau reset filter.</td></tr>';
+  $('tblInfo').textContent = `${f0(r.length)} baris sesuai filter`;
+  $('pgInfo').textContent = r.length ? `Menampilkan ${s + 1}–${Math.min(s + S.ps, r.length)} dari ${f0(r.length)}` : '';
+  const nums = new Set([1, pages, S.page - 1, S.page, S.page + 1]);
+  let h = `<button class="btn" data-p="${S.page - 1}" ${S.page === 1 ? 'disabled' : ''} style="border:1px solid var(--line);color:var(--ink)">‹</button>`, last = 0;
+  [...nums].filter(p => p >= 1 && p <= pages).sort((a, b) => a - b).forEach(p => {
+    if (p - last > 1) h += '<span class="px-1 self-center">…</span>';
+    h += `<button class="btn" data-p="${p}" style="border:1px solid ${p === S.page ? 'var(--navy)' : 'var(--line)'};background:${p === S.page ? 'var(--navy)' : 'transparent'};color:${p === S.page ? '#fff' : 'var(--ink)'}">${p}</button>`; last = p
+  });
+  h += `<button class="btn" data-p="${S.page + 1}" ${S.page === pages ? 'disabled' : ''} style="border:1px solid var(--line);color:var(--ink)">›</button>`;
+  $('pager').innerHTML = h;
+}
+$('thead').addEventListener('click', e => { const th = e.target.closest('th'); if (!th) return; const k = th.dataset.k; S.sort = S.sort.k === k ? { k, d: -S.sort.d } : { k, d: typeof ROWS[0][k] === 'string' ? 1 : -1 }; renderTable() });
+$('thead').addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.target.click() } });
+$('pager').addEventListener('click', e => { const b = e.target.closest('[data-p]'); if (!b || b.disabled) return; S.page = +b.dataset.p; renderTable() });
+
+/* ---------- ekspor ---------- */
+function exportCsv() {
+  const r = filtered(), q = v => `"${String(v).replace(/"/g, '""')}"`;
+  const head = ['Tahun', 'Provinsi', 'Kab/Kota', 'Kelompok Ikan', 'Jenis Ikan', 'Jenis Usaha', 'Volume (ton)', 'Nilai (Rp. Juta)', 'Harga Rata-Rata Tertimbang (Rp/kg)'];
+  const csv = '\ufeff' + [head.join(','), ...r.map(x => [x.y, 'JAWA BARAT', q(x.k), q(x.g), q(x.j), q(x.u), x.v, x.n, x.h].join(','))].join('\n');
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+  a.download = 'perikanan_jabar_terfilter.csv'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+/* ---------- render ---------- */
+function render(skipReg) {
+  syncControls(skipReg);
+  const rows = filtered();
+  renderKpi(rows); renderCharts(rows); renderTable();
+}
+
+// Muat data saat halaman web siap
+document.addEventListener('DOMContentLoaded', loadDataFromFastAPI);
+matchMedia('(prefers-color-scheme:dark)').addEventListener('change', () => { applyTheme(); Object.values(CH).forEach(c => c.update()) });
+</script>
+</body>
+</html>
