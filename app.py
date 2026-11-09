@@ -1,157 +1,165 @@
 import streamlit as st
 import pandas as pd
-from utils.database import load_perikanan_data
-from utils import visualizations as viz
+import plotly.express as px
+import plotly.graph_objects as go
+from sqlalchemy import create_engine, text
 
-# Konfigurasi Halaman
+# 1. Konfigurasi Halaman
 st.set_page_config(
     page_title="Dashboard Perikanan Tangkap Jawa Barat",
-    page_icon="",
+    page_icon="🐟",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS
-st.markdown("""
-    <style>
-    .metric-card {
-        background-color: #f0f2f6;
-        padding: 20px;
-        border-radius: 10px;
-        text-align: center;
-    }
-    </style>
-""", unsafe_allow_html=True)
+# 2. Koneksi Database (Mengambil dari secrets)
+@st.cache_resource
+def get_engine():
+    try:
+        db_url = st.secrets["DATABASE_URL"]
+        # connect_args memastikan koneksi SSL aktif untuk Neon
+        engine = create_engine(db_url, connect_args={"sslmode": "require"})
+        return engine
+    except Exception as e:
+        st.error(f"❌ Gagal koneksi database: {e}")
+        return None
 
-# Header
+# 3. Load Data
+@st.cache_data(ttl=300)
+def load_data():
+    engine = get_engine()
+    if engine is None:
+        return None
+    
+    # CATATAN: Jika error menyebut kolom 'jenis_ikan' tidak ada, 
+    # ganti 'dj.jenis_ikan' menjadi 'dj.nama' atau 'dj.nama_ikan' sesuai struktur tabelmu.
+    query = """
+        SELECT 
+            dk.kab_kota AS kabupaten,
+            dj.kelompok_ikan AS kelompok,
+            dj.jenis_ikan AS jenis_ikan,
+            du.jenis_usaha AS usaha,
+            f.tahun,
+            f.produksi_ton AS volume,
+            f.nilai_produksi_ribu_rupiah AS nilai_ribu
+        FROM fact_produksi_perikanan f
+        JOIN dim_kab_kota dk ON f.id_kab_kota = dk.id_kab_kota
+        JOIN dim_jenis_ikan dj ON f.id_jenis_ikan = dj.id_jenis_ikan
+        JOIN dim_jenis_usaha du ON f.id_jenis_usaha = du.id_jenis_usaha
+    """
+    
+    try:
+        with engine.connect() as conn:
+            df = pd.read_sql(text(query), conn)
+        
+        # Kalkulasi tambahan
+        df['nilai_rp'] = df['nilai_ribu'] * 1000
+        df['nilai_juta'] = df['nilai_rp'] / 1_000_000
+        df['nilai_triliun'] = df['nilai_rp'] / 1_000_000_000_000
+        df['harga_per_kg'] = df.apply(
+            lambda r: (r['nilai_rp'] / (r['volume'] * 1000)) if r['volume'] > 0 else 0, 
+            axis=1
+        )
+        return df
+    except Exception as e:
+        st.error(f"❌ Query gagal: {e}")
+        st.info("💡 Tips: Jika error menyebut kolom tidak ditemukan, buka DBeaver/Neon dan cek nama kolom yang benar di tabel `dim_jenis_ikan` (mungkin 'nama' atau 'nama_ikan'), lalu ubah di query atas.")
+        return None
+
+df_raw = load_data()
+if df_raw is None:
+    st.stop()
+
+# 4. Header
 st.title("🐟 Dashboard Potensi Perikanan Tangkap Jawa Barat")
-st.markdown("**Periode 2022–2024** | Interaktif & Real-time")
+st.markdown("**Periode 2022–2024** | Data Real-time dari Cloud Database")
 st.markdown("---")
 
-# Load Data
-@st.cache_data
-def get_filtered_data(df, years, kab, ikan, usaha):
-    """Filter data dengan caching"""
-    df_filtered = df.copy()
-    if years:
-        df_filtered = df_filtered[df_filtered['tahun'].isin(years)]
-    if kab:
-        df_filtered = df_filtered[df_filtered['kabupaten'].isin(kab)]
-    if ikan:
-        df_filtered = df_filtered[df_filtered['jenis_ikan'].isin(ikan)]
-    if usaha != "Semua":
-        df_filtered = df_filtered[df_filtered['usaha'] == usaha]
-    return df_filtered
+# 5. Sidebar Filter
+with st.sidebar:
+    st.header("🔍 Filter Data")
+    
+    years = sorted(df_raw['tahun'].unique())
+    selected_years = st.multiselect("Tahun", years, default=years)
+    
+    usaha_list = ["Semua"] + sorted(df_raw['usaha'].unique())
+    selected_usaha = st.selectbox("Jenis Usaha", usaha_list)
+    
+    kab_list = sorted(df_raw['kabupaten'].unique())
+    selected_kab = st.multiselect("Kabupaten / Kota", kab_list, default=kab_list[:5])
+    
+    ikan_list = sorted(df_raw['jenis_ikan'].unique())
+    selected_ikan = st.multiselect("Jenis Ikan", ikan_list)
 
-# Main App
-def main():
-    # Load data
-    df_raw = load_perikanan_data()
-    if df_raw is None:
-        st.warning("⚠️ Data tidak tersedia. Periksa koneksi database.")
-        return
-    
-    # Sidebar Filter
-    with st.sidebar:
-        st.header("🔍 Filter Data")
-        st.markdown("---")
+# 6. Filtering Data
+df_filtered = df_raw.copy()
+if selected_years:
+    df_filtered = df_filtered[df_filtered['tahun'].isin(selected_years)]
+if selected_usaha != "Semua":
+    df_filtered = df_filtered[df_filtered['usaha'] == selected_usaha]
+if selected_kab:
+    df_filtered = df_filtered[df_filtered['kabupaten'].isin(selected_kab)]
+if selected_ikan:
+    df_filtered = df_filtered[df_filtered['jenis_ikan'].isin(selected_ikan)]
+
+if df_filtered.empty:
+    st.warning("⚠️ Tidak ada data yang sesuai dengan filter.")
+    st.stop()
+
+# 7. KPI Metrics
+total_volume = df_filtered['volume'].sum()
+total_nilai_triliun = df_filtered['nilai_rp'].sum() / 1e12
+harga_avg = (df_filtered['nilai_rp'].sum() / (total_volume * 1000)) if total_volume > 0 else 0
+
+col1, col2, col3, col4 = st.columns(4)
+col1.metric("📦 Total Volume", f"{total_volume:,.0f} Ton")
+col2.metric("💰 Total Nilai", f"Rp {total_nilai_triliun:,.2f} T")
+col3.metric("⚖️ Harga Rata-rata", f"Rp {harga_avg:,.0f}/kg")
+col4.metric("📈 Total Data", f"{len(df_filtered):,} Record")
+st.markdown("---")
+
+# 8. Visualisasi
+tab1, tab2, tab3 = st.tabs(["📈 Tren & Wilayah", "🐠 Komoditas & Usaha", "📋 Data Rinci"])
+
+with tab1:
+    col_a, col_b = st.columns(2)
+    with col_a:
+        st.subheader("Tren Tahunan Volume vs Nilai Ekonomi")
+        df_trend = df_filtered.groupby('tahun').agg({'volume': 'sum', 'nilai_triliun': 'sum'}).reset_index()
+        fig_trend = go.Figure()
+        fig_trend.add_trace(go.Bar(x=df_trend['tahun'], y=df_trend['volume'], name='Volume (Ton)', marker_color='#1f77b4'))
+        fig_trend.add_trace(go.Scatter(x=df_trend['tahun'], y=df_trend['nilai_triliun'], name='Nilai (Triliun Rp)', marker_color='#ff7f0e', yaxis='y2'))
+        fig_trend.update_layout(xaxis=dict(title='Tahun'), yaxis=dict(title='Volume (Ton)'), yaxis2=dict(title='Nilai (Triliun Rp)', side='right', overlaying='y'))
+        st.plotly_chart(fig_trend, use_container_width=True)
         
-        # Filter Tahun
-        years = sorted(df_raw['tahun'].unique())
-        selected_years = st.multiselect("Tahun", years, default=years)
+    with col_b:
+        st.subheader("Top 10 Kabupaten/Kota (Volume)")
+        df_kab = df_filtered.groupby('kabupaten')['volume'].sum().nlargest(10).reset_index()
+        fig_kab = px.bar(df_kab, y='kabupaten', x='volume', orientation='h', color='volume', color_continuous_scale='Blues')
+        fig_kab.update_layout(showlegend=False, yaxis={'categoryorder': 'total ascending'})
+        st.plotly_chart(fig_kab, use_container_width=True)
+
+with tab2:
+    col_c, col_d = st.columns(2)
+    with col_c:
+        st.subheader("Top 10 Jenis Ikan (Nilai Tertinggi)")
+        df_ikan = df_filtered.groupby('jenis_ikan')['nilai_juta'].sum().nlargest(10).reset_index()
+        fig_ikan = px.bar(df_ikan, y='jenis_ikan', x='nilai_juta', orientation='h', color='nilai_juta', color_continuous_scale='Viridis')
+        fig_ikan.update_layout(showlegend=False, yaxis={'categoryorder': 'total ascending'})
+        st.plotly_chart(fig_ikan, use_container_width=True)
         
-        # Filter Jenis Usaha
-        usaha_list = ["Semua"] + sorted(df_raw['usaha'].unique())
-        selected_usaha = st.selectbox("Jenis Usaha", usaha_list)
-        
-        # Filter Kabupaten
-        kab_list = sorted(df_raw['kabupaten'].unique())
-        selected_kab = st.multiselect("Kabupaten / Kota", kab_list, default=kab_list[:5])
-        
-        # Filter Jenis Ikan
-        ikan_list = sorted(df_raw['jenis_ikan'].unique())
-        selected_ikan = st.multiselect("Jenis Ikan", ikan_list)
-        
-        # Reset Filter Button
-        if st.button("🔄 Reset Filter"):
-            st.cache_data.clear()
-            st.rerun()
-        
-        st.markdown("---")
-        
-        # Export Data
-        st.subheader(" Ekspor Data")
-        df_temp = get_filtered_data(df_raw, selected_years, selected_kab, selected_ikan, selected_usaha)
-        csv = df_temp.to_csv(index=False)
-        st.download_button(
-            label="Unduh CSV",
-            data=csv,
-            file_name="perikanan_jabar_2022_2024.csv",
-            mime="text/csv"
-        )
-    
-    # Filter Data
-    df_filtered = get_filtered_data(df_raw, selected_years, selected_kab, selected_ikan, selected_usaha)
-    
-    if df_filtered.empty:
-        st.warning("⚠️ Tidak ada data yang sesuai dengan filter.")
-        return
-    
-    # KPI Metrics
-    total_volume = df_filtered['volume'].sum()
-    total_nilai_triliun = df_filtered['nilai_rp'].sum() / 1e12
-    harga_avg = (df_filtered['nilai_rp'].sum() / (total_volume * 1000)) if total_volume > 0 else 0
-    total_records = len(df_filtered)
-    
-    col1, col2, col3, col4 = st.columns(4)
-    with col1:
-        st.metric(" Total Volume", f"{total_volume:,.0f} Ton")
-    with col2:
-        st.metric("💰 Total Nilai", f"Rp {total_nilai_triliun:,.2f} T")
-    with col3:
-        st.metric("️ Harga Rata-rata", f"Rp {harga_avg:,.0f}/kg")
-    with col4:
-        st.metric("📈 Total Data", f"{total_records:,} Record")
-    
-    st.markdown("---")
-    
-    # Visualisasi
-    tab1, tab2, tab3, tab4 = st.tabs(["📈 Tren & Wilayah", "🐠 Komoditas", "📊 Analisis", "📋 Data Rinci"])
-    
-    with tab1:
-        col_a, col_b = st.columns(2)
-        with col_a:
-            fig_trend = viz.create_trend_chart(df_filtered)
-            st.plotly_chart(fig_trend, use_container_width=True)
-        
-        with col_b:
-            fig_kab = viz.create_top_kabupaten_chart(df_filtered)
-            st.plotly_chart(fig_kab, use_container_width=True)
-    
-    with tab2:
-        col_c, col_d = st.columns(2)
-        with col_c:
-            fig_ikan = viz.create_top_ikan_chart(df_filtered)
-            st.plotly_chart(fig_ikan, use_container_width=True)
-        
-        with col_d:
-            fig_pie = viz.create_pie_usaha_chart(df_filtered)
-            st.plotly_chart(fig_pie, use_container_width=True)
-    
-    with tab3:
-        fig_scatter = viz.create_scatter_harga_volume(df_filtered)
-        st.plotly_chart(fig_scatter, use_container_width=True)
-        
-        st.markdown("### 📊 Distribusi Harga per Kelompok Ikan")
-        df_box = df_filtered.groupby(['kelompok', 'jenis_ikan'])['harga_per_kg'].mean().reset_index()
-        st.dataframe(df_box, use_container_width=True)
-    
-    with tab4:
-        st.subheader("Tabel Data Lengkap")
-        
-        # Column configuration
-        column_config = {
-            "tahun": st.column_config.NumberColumn("Tahun", format="%d"),
+    with col_d:
+        st.subheader("Proporsi Volume menurut Jenis Usaha")
+        df_u = df_filtered.groupby('usaha')['volume'].sum().reset_index()
+        fig_pie = px.pie(df_u, values='volume', names='usaha', hole=0.4)
+        st.plotly_chart(fig_pie, use_container_width=True)
+
+with tab3:
+    st.subheader("Tabel Data Lengkap")
+    st.dataframe(
+        df_filtered[['tahun', 'kabupaten', 'kelompok', 'jenis_ikan', 'usaha', 'volume', 'nilai_juta', 'harga_per_kg']],
+        column_config={
+            "tahun": "Tahun",
             "kabupaten": "Kabupaten/Kota",
             "kelompok": "Kelompok",
             "jenis_ikan": "Jenis Ikan",
@@ -159,25 +167,7 @@ def main():
             "volume": st.column_config.NumberColumn("Volume (Ton)", format="%.2f"),
             "nilai_juta": st.column_config.NumberColumn("Nilai (Juta Rp)", format="%.2f"),
             "harga_per_kg": st.column_config.NumberColumn("Harga (Rp/kg)", format="%.0f"),
-        }
-        
-        st.dataframe(
-            df_filtered[['tahun', 'kabupaten', 'kelompok', 'jenis_ikan', 'usaha', 'volume', 'nilai_juta', 'harga_per_kg']],
-            column_config=column_config,
-            use_container_width=True,
-            hide_index=True
-        )
-    
-    # Footer
-    st.markdown("---")
-    st.markdown(
-        """
-        <div style='text-align: center; color: gray;'>
-        <small>Dashboard Perikanan Tangkap Jawa Barat 2022–2024 | Data: Dinas Kelautan dan Perikanan Jabar</small>
-        </div>
-        """,
-        unsafe_allow_html=True
+        },
+        use_container_width=True,
+        hide_index=True
     )
-
-if __name__ == "__main__":
-    main()
